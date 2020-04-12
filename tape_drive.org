@@ -1,0 +1,8 @@
+* sequence
+** download streamers
+- see crawler_tensor
+** parse input
+find rust
+- with nom
+- with https://github.com/raphlinus/pulldown-cmark
+** get viewers from twitch
