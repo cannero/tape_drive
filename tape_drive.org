@@ -6,3 +6,78 @@ find rust
 - with nom
 - with https://github.com/raphlinus/pulldown-cmark
 ** get viewers from twitch
+* pulldown-cmark
+** md block streamer
+let md = "### Adam13531
+#### What Adam streams:
+- Node.js, JavaScript, React, PixiJS, Full Stack Development, Game Development
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/adam13531)
+#### Links:
+- [Discord](https://discord.gg/botland)
+- [Twitter](https://twitter.com/Xtonomous)
+- [YouTube](https://www.youtube.com/channel/UCJFxRNHar-c_lKYxFMIPg_g)
+- [Website](https://bot.land)
+- [Blog](https://blog.bot.land)
+
+[(top)](#table-of-contents)
+
+---";
+** structure streamer
+Start(Heading(3))
+Text(Borrowed("Adam13531"))
+End(Heading(3))
+Start(Heading(4))
+Text(Borrowed("What Adam streams:"))
+End(Heading(4))
+Start(List(None))
+Start(Item)
+Text(Borrowed("Node.js, JavaScript, React, PixiJS, Full Stack Development, Game Development"))
+End(Item)
+End(List(None))
+Start(Heading(4))
+Text(Borrowed("Streaming on:"))
+End(Heading(4))
+Start(List(None))
+Start(Item)
+Start(Link(Inline, Borrowed("https://www.twitch.tv/adam13531"), Borrowed("")))
+Text(Borrowed("Twitch"))
+End(Link(Inline, Borrowed("https://www.twitch.tv/adam13531"), Borrowed("")))
+End(Item)
+End(List(None))
+Start(Heading(4))
+Text(Borrowed("Links:"))
+End(Heading(4))
+Start(List(None))
+Start(Item)
+Start(Link(Inline, Borrowed("https://discord.gg/botland"), Borrowed("")))
+Text(Borrowed("Discord"))
+End(Link(Inline, Borrowed("https://discord.gg/botland"), Borrowed("")))
+End(Item)
+Start(Item)
+Start(Link(Inline, Borrowed("https://twitter.com/Xtonomous"), Borrowed("")))
+Text(Borrowed("Twitter"))
+End(Link(Inline, Borrowed("https://twitter.com/Xtonomous"), Borrowed("")))
+End(Item)
+Start(Item)
+Start(Link(Inline, Borrowed("https://www.youtube.com/channel/UCJFxRNHar-c_lKYxFMIPg_g"), Borrowed("")))
+Text(Borrowed("YouTube"))
+End(Link(Inline, Borrowed("https://www.youtube.com/channel/UCJFxRNHar-c_lKYxFMIPg_g"), Borrowed("")))
+End(Item)
+Start(Item)
+Start(Link(Inline, Borrowed("https://bot.land"), Borrowed("")))
+Text(Borrowed("Website"))
+End(Link(Inline, Borrowed("https://bot.land"), Borrowed("")))
+End(Item)
+Start(Item)
+Start(Link(Inline, Borrowed("https://blog.bot.land"), Borrowed("")))
+Text(Borrowed("Blog"))
+End(Link(Inline, Borrowed("https://blog.bot.land"), Borrowed("")))
+End(Item)
+End(List(None))
+Start(Paragraph)
+Start(Link(Inline, Borrowed("#table-of-contents"), Borrowed("")))
+Text(Borrowed("(top)"))
+End(Link(Inline, Borrowed("#table-of-contents"), Borrowed("")))
+End(Paragraph)
+Rule

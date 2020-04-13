@@ -1,4 +1,5 @@
 mod downloader;
+mod parser;
 
 type AsyncError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -9,6 +10,8 @@ async fn main() -> Result<(), AsyncError> {
     )
     .await?;
 
-    dbg!(file);
+    if let Err(err) = parser::parse_md(&file) {
+        println!("could not parse file: {}", err);
+    }
     Ok(())
 }
