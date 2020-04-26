@@ -1,5 +1,5 @@
 mod downloader;
-mod parser;
+mod nom_parser;
 
 type AsyncError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -10,8 +10,8 @@ async fn main() -> Result<(), AsyncError> {
     )
     .await?;
 
-    if let Err(err) = parser::parse_md(&file) {
-        println!("could not parse file: {}", err);
-    }
+    let (_, color) = nom_parser::hex_color("Some text: #2F12A4")?;
+    println!("{:?}", color);
+
     Ok(())
 }
