@@ -1,18 +1,22 @@
 use pulldown_cmark::{CowStr, Event, LinkType, Parser, Tag};
 
 pub fn parse_md(text: &str) -> Result<(), String> {
-    let parser = Parser::new(text).skip_while(|event| match event {
+    let parser = &mut Parser::new(text).skip_while(|event| match event {
         Event::Text(CowStr::Borrowed("Developers That Stream")) => false,
         _ => true,
     });
 
-    let parser = parser.skip_while(|event| match event {
-        Event::Start(Tag::Heading(_)) => false,
-        _ => true,
-    });
+    let mut streamers = vec![];
+    while let Some(_) = parser.next() {
+        let parser = parser.skip_while(|event| match event {
+            Event::Start(Tag::Heading(3)) => false,
+            _ => true,
+        });
 
-    let streamer = parse_one_block(parser)?;
-    println!("{:?}", streamer);
+        let streamer = parse_one_block(parser)?;
+        streamers.push(streamer);
+    }
+    println!("{:?}", streamers.len());
     Ok(())
 }
 
@@ -23,6 +27,7 @@ struct Streamer {
     link: String,
 }
 
+//TODO? layout not the same for each block...
 fn parse_one_block<'a>(mut parser: impl Iterator<Item = Event<'a>>) -> Result<Streamer, String> {
     parser.next();
     let name = match parser.next() {
@@ -38,6 +43,11 @@ fn parse_one_block<'a>(mut parser: impl Iterator<Item = Event<'a>>) -> Result<St
         Some(Event::Text(CowStr::Borrowed(topics))) => topics,
         s => return Err(format!("not topics, but {:?}", s)),
     };
+
+    let parser = parser.skip_while(|event| match event {
+        Event::Text(CowStr::Borrowed("Streaming on:")) => false,
+        _ => true,
+    });
 
     let mut parser = parser.skip_while(|event| match event {
         Event::Start(Tag::Item) => false,
