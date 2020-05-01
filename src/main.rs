@@ -10,8 +10,10 @@ async fn main() -> Result<(), AsyncError> {
     )
     .await?;
 
-    let (_, color) = nom_parser::hex_color("Some text: #2F12A4")?;
-    println!("{:?}", color);
+    let streamers = nom_parser::parse_file(&file)?;
+    for streamer in streamers {
+        println!("{:?}", streamer);
+    }
 
     Ok(())
 }
