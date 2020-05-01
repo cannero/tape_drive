@@ -5,7 +5,8 @@ authors = ["cannero"]
 edition = "2018"
 
 [dependencies]
-surf = "1.0.3"
+surf = "2.0.0-alpha.2"
+serde = { version = "1.0.106", features = ["derive"] }
 pulldown-cmark = "0.7.0"
 nom = "6.0.0-alpha1"
 

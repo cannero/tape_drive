@@ -5,6 +5,10 @@ type AsyncError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[async_std::main]
 async fn main() -> Result<(), AsyncError> {
+    let twitch_streamer = downloader::get_twitch_user("ksivamuthu".to_string()).await?;
+    println!("{:?}", twitch_streamer);
+    return Ok(());
+
     let file = downloader::download_file(
         "https://raw.githubusercontent.com/bnb/awesome-developer-streams/master/README.md",
     )
