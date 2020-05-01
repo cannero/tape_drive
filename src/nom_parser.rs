@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_until, take_while},
-    character::complete::{alphanumeric1, multispace0},
+    character::complete::multispace0,
     multi::many_till,
     sequence::delimited,
     IResult,
@@ -34,13 +34,41 @@ fn streamers_block_start(input: &str) -> IResult<&str, &str> {
 
 fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
     let (input, name) = streamer_name(input)?;
-    let (input, _) = channel_start(input)?;
-    let (input, channel) = streamer_channel(input)?;
+
+    if vec![
+        "Brad Garropy",
+        "Coding Garden with CJ",
+        "Daniel Shiffman",
+        "DJ Adams",
+        "Eddie Jaoude",
+        "Gynvael Coldwind",
+        "Jesse Weigel",
+        "Josh Wulf",
+        "Lizzie Siegle",
+        "Luke Gorrie",
+        "Masood Sadri",
+        "Sallar Kaboli",
+        "SkillVid",
+    ]
+    .contains(&name)
+    {
+        //take next streamer, no twitch account
+        let (input, _) = streamer_start(input)?;
+        return parse_streamer(input);
+    }
+
+    let channel_start_id = if name == "Randall Hunt" {
+        "- [Twitch (Personal)]("
+    } else {
+        CHANNEL_START_ID
+    };
+    let (input, _) = channel_start(input, channel_start_id)?;
+    let (input, channel) = streamer_channel(input, channel_start_id)?;
     let (input, _) = streamer_start(input)?;
     Ok((
         input,
         Streamer {
-            name: name.to_string(),
+            name: name.trim().to_string(),
             channel: channel.to_string(),
         },
     ))
@@ -48,13 +76,15 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
 
 fn streamer_name(input: &str) -> IResult<&str, &str> {
     let (input, _) = multispace0(input)?;
-    //TODO use preceded
-    let (input, _) = alt((tag("### "), tag("## ")))(input)?;
-    alphanumeric1(input)
+    delimited(
+        alt((tag("### "), tag("## "))),
+        take_while(|c| c != '\n'),
+        tag("\n"),
+    )(input)
 }
 
-fn streamer_channel(input: &str) -> IResult<&str, &str> {
-    delimited(tag(CHANNEL_START_ID), take_while(|c| c != ')'), tag(")\n"))(input)
+fn streamer_channel<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str, &'a str> {
+    delimited(tag(channel_start_id), take_while(|c| c != ')'), tag(")\n"))(input)
 }
 
 fn streamer_start(input: &str) -> IResult<&str, &str> {
@@ -62,8 +92,13 @@ fn streamer_start(input: &str) -> IResult<&str, &str> {
     alt((tag("----\n"), tag("---\n---\n"), tag("---\n")))(input)
 }
 
-fn channel_start(input: &str) -> IResult<&str, &str> {
-    take_until(CHANNEL_START_ID)(input)
+fn channel_start<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str, &'a str> {
+    let (input, taken) = take_until(channel_start_id)(input)?;
+    if taken.contains("---") {
+        Err(nom::Err::Error((taken, nom::error::ErrorKind::OneOf)))
+    } else {
+        Ok((input, taken))
+    }
 }
 
 #[cfg(test)]
@@ -138,7 +173,7 @@ text and more text
 
 ---";
 
-        let (_, channel) = streamer_channel(input).unwrap();
+        let (_, channel) = streamer_channel(input, CHANNEL_START_ID).unwrap();
 
         assert_eq!(channel, "https://www.twitch.tv/brookzerker");
     }
@@ -186,7 +221,7 @@ text and more text
 - [Twitter](https://twitter.com/brooks_patton)
 - [GitHub](https://github.com/BrooksPatton)";
 
-        let (channel_start, _) = channel_start(input).unwrap();
+        let (channel_start, _) = channel_start(input, CHANNEL_START_ID).unwrap();
 
         assert_eq!(
             channel_start,
@@ -198,29 +233,64 @@ text and more text
     }
 
     #[test]
-    fn test_parse_streamer() {
-        let input = "### Brookzerker
-#### What Brookzerker streams:
-- Rust
+    fn test_channel_start_two_twitch_channels() {
+        let input = "#### What Randall streams:
+AWS, Web Development, Python, Serverless, AI
 #### Streaming on:
-- [Twitch](https://www.twitch.tv/brookzerker)
+- [Twitch (AWS)](https://www.twitch.tv/aws)
+- [Twitch (Personal)](https://www.twitch.tv/RandallAtAmazon)
 #### Links:
-- [Twitter](https://twitter.com/brooks_patton)
-- [GitHub](https://github.com/BrooksPatton)
+- [Twitter](https://twitter.com/jrhunt)
+- [GitHub](https://github.com/ranman)
+- [YouTube](https://www.youtube.com/channel/UC-yKovfbYEWyD_pXh9n7nHA)
 
 [(top)](#table-of-contents)
 
 ---
-### Btor
-#### What Btor streams:";
+### Ricardo Tavares
+#### What Ricardo streams:
+Angular 6+, SCSS, LUA, Node.js, Python, SQL, Typescript, WASM, Web Development
+#### Streaming on:
+- [Mixer](https://mixer.com/Rjgtav)
+- [Twitch](https://www.twitch.tv/rjgtav/)
+- [YouTube](https://www.youtube.com/user/rjgtav)";
+
+        let start = channel_start(input, CHANNEL_START_ID);
+
+        assert!(start.is_err());
+    }
+
+    #[test]
+    fn test_parse_streamer() {
+        let input = "### Mike Conley
+#### What Mike streams:
+- Firefox Development, JavaScript, C++, CSS, Rust
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/mikeconley_dot_ca)
+- [Facebook](https://www.facebook.com/TheJoyOfCoding1/)
+- [YouTube](https://www.youtube.com/channel/UCTDXvmarLFnox4AO0w2NuiQ)
+- [Air Mozilla](https://air.mozilla.org/channels/livehacking/)
+#### Links:
+- [Twitter](http://twitter.com/mike_conley)
+- [GitHub](http://github.com/mikeconley/)
+- [YouTube](https://www.youtube.com/channel/UCTDXvmarLFnox4AO0w2NuiQ)
+- [Website](https://www.mikeconley.ca/blog)
+
+[(top)](#table-of-contents)
+
+---
+### Nicholas Brochu
+#### What Nicholas streams:
+- Python, Serpent.AI Framework Dev, Machine Learning, AI, Computer Vision
+";
 
         let (_, streamer) = parse_streamer(input).unwrap();
 
         assert_eq!(
             streamer,
             Streamer {
-                name: "Brookzerker".to_string(),
-                channel: "https://www.twitch.tv/brookzerker".to_string(),
+                name: "Mike Conley".to_string(),
+                channel: "https://www.twitch.tv/mikeconley_dot_ca".to_string(),
             }
         );
     }
