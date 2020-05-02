@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::{tag, take_until, take_while},
     character::complete::multispace0,
     multi::many_till,
-    sequence::delimited,
+    sequence::{delimited, tuple},
     IResult,
 };
 
@@ -12,7 +12,7 @@ const CHANNEL_START_ID: &str = "- [Twitch](";
 #[derive(Debug, PartialEq)]
 pub struct Streamer {
     name: String,
-    channel: String,
+    login: String,
 }
 
 pub fn parse_file(input: &str) -> Result<Vec<Streamer>, String> {
@@ -49,6 +49,7 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         "Masood Sadri",
         "Sallar Kaboli",
         "SkillVid",
+        "Tanya Janca", //aka.ms, not using twitch any more?
     ]
     .contains(&name)
     {
@@ -63,13 +64,13 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         CHANNEL_START_ID
     };
     let (input, _) = channel_start(input, channel_start_id)?;
-    let (input, channel) = streamer_channel(input, channel_start_id)?;
+    let (input, login) = streamer_login(input, channel_start_id)?;
     let (input, _) = streamer_start(input)?;
     Ok((
         input,
         Streamer {
             name: name.trim().to_string(),
-            channel: channel.to_string(),
+            login: login.to_string(),
         },
     ))
 }
@@ -83,8 +84,16 @@ fn streamer_name(input: &str) -> IResult<&str, &str> {
     )(input)
 }
 
-fn streamer_channel<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str, &'a str> {
-    delimited(tag(channel_start_id), take_while(|c| c != ')'), tag(")\n"))(input)
+fn streamer_login<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str, &'a str> {
+    delimited(
+        tuple((
+            tag(channel_start_id),
+            alt((tag("https:"), tag("http:"))),
+            alt((tag("//www.twitch.tv/"), tag("//twitch.tv/"))),
+        )),
+        take_while(|c| c != ')'),
+        tag(")\n"),
+    )(input)
 }
 
 fn streamer_start(input: &str) -> IResult<&str, &str> {
@@ -163,7 +172,7 @@ text and more text
     }
 
     #[test]
-    fn test_parse_channel() {
+    fn test_parse_login() {
         let input = "- [Twitch](https://www.twitch.tv/brookzerker)
 #### Links:
 - [Twitter](https://twitter.com/brooks_patton)
@@ -173,9 +182,19 @@ text and more text
 
 ---";
 
-        let (_, channel) = streamer_channel(input, CHANNEL_START_ID).unwrap();
+        let (_, login) = streamer_login(input, CHANNEL_START_ID).unwrap();
 
-        assert_eq!(channel, "https://www.twitch.tv/brookzerker");
+        assert_eq!(login, "brookzerker");
+    }
+
+    #[test]
+    fn test_parse_login_only_http() {
+        let input = "- [Twitch](http://twitch.tv/Shinmera)
+";
+
+        let (_, login) = streamer_login(input, CHANNEL_START_ID).unwrap();
+
+        assert_eq!(login, "Shinmera");
     }
 
     #[test]
@@ -290,7 +309,7 @@ Angular 6+, SCSS, LUA, Node.js, Python, SQL, Typescript, WASM, Web Development
             streamer,
             Streamer {
                 name: "Mike Conley".to_string(),
-                channel: "https://www.twitch.tv/mikeconley_dot_ca".to_string(),
+                login: "mikeconley_dot_ca".to_string(),
             }
         );
     }
