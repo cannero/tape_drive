@@ -15,6 +15,12 @@ pub struct Streamer {
     login: String,
 }
 
+impl Streamer {
+    pub fn login_name(&self) -> &String {
+        &self.login
+    }
+}
+
 pub fn parse_file(input: &str) -> Result<Vec<Streamer>, String> {
     let (input, _) = streamers_block_start(input).unwrap();
     match parse_streamers(input) {
@@ -70,7 +76,7 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         input,
         Streamer {
             name: name.trim().to_string(),
-            login: login.to_string(),
+            login: login.trim_matches('/').to_string(),
         },
     ))
 }
@@ -285,7 +291,7 @@ Angular 6+, SCSS, LUA, Node.js, Python, SQL, Typescript, WASM, Web Development
 #### What Mike streams:
 - Firefox Development, JavaScript, C++, CSS, Rust
 #### Streaming on:
-- [Twitch](https://www.twitch.tv/mikeconley_dot_ca)
+- [Twitch](https://www.twitch.tv/mikeconley_dot_ca/)
 - [Facebook](https://www.facebook.com/TheJoyOfCoding1/)
 - [YouTube](https://www.youtube.com/channel/UCTDXvmarLFnox4AO0w2NuiQ)
 - [Air Mozilla](https://air.mozilla.org/channels/livehacking/)

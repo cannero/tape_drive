@@ -8,6 +8,7 @@ pub async fn download_file(url: &str) -> DownloadResult {
 }
 
 const CLIENT_ID_KEY: &str = "TWITCH_CLIENT_ID";
+const LOGIN_CHUNK_SIZE: usize = 100;
 
 #[derive(Deserialize, Serialize)]
 struct UsersData {
@@ -22,21 +23,32 @@ pub struct TwitchUserData {
     view_count: u32,
 }
 
-pub async fn get_twitch_user(login: String) -> Result<TwitchUserData, AsyncError> {
+pub async fn get_twitch_users(
+    login_names: Vec<&String>,
+) -> Result<Vec<TwitchUserData>, AsyncError> {
+    let urls = build_urls(login_names, LOGIN_CHUNK_SIZE);
+    let mut res = vec![];
+    for url in urls {
+        res.extend(get_data_for_twitch_users(&url).await?);
+    }
+    Ok(res)
+}
+
+async fn get_data_for_twitch_users(url: &String) -> Result<Vec<TwitchUserData>, AsyncError> {
     let client_id = match std::env::var(CLIENT_ID_KEY) {
         Ok(val) => val,
         Err(e) => panic!("twich client id not found, key {}, {}", CLIENT_ID_KEY, e),
     };
-    let url = format!("https://api.twitch.tv/helix/users?login={}", login);
+    println!("{}", url);
     let UsersData { users } = surf::get(url)
         .set_header("Client-ID".parse().unwrap(), client_id)
         .recv_json()
         .await?;
 
-    Ok(users[0].clone())
+    Ok(users)
 }
 
-fn build_urls(login_names: Vec<String>, chunk_size: usize) -> Vec<String> {
+fn build_urls(login_names: Vec<&String>, chunk_size: usize) -> Vec<String> {
     login_names
         .chunks(chunk_size)
         .map(|streamer_chunk| {
@@ -64,7 +76,7 @@ mod tests {
     fn test_build_urls() {
         let login_names = vec!["s_1".to_string(), "s_2".to_string(), "s_3".to_string()];
 
-        let urls = build_urls(login_names, 2);
+        let urls = build_urls(login_names.iter().collect(), 2);
 
         assert_eq!(
             urls,
