@@ -9,7 +9,8 @@ surf = "2.0.0-alpha.2"
 serde = { version = "1.0.106", features = ["derive"] }
 pulldown-cmark = "0.7.0"
 nom = "6.0.0-alpha1"
+futures = "0.3"
 
 [dependencies.async-std]
-version = "1.5.0"
+version = "1"
 features = ["attributes"]

@@ -1,11 +1,23 @@
 * sequence
-** download streamers
+** DONE download streamers
+   CLOSED: [2020-05-21 Thu 15:42]
 - see crawler_tensor
-** parse input
+** DONE parse input
+   CLOSED: [2020-05-10 Sun 10:52]
 find rust
 - with nom
 - with https://github.com/raphlinus/pulldown-cmark
-** get viewers from twitch
+** DONE get viewers from twitch
+   CLOSED: [2020-05-10 Sun 10:52]
+
+** DONE get followers
+   CLOSED: [2020-05-21 Thu 15:42]
+can only be done per single streamer
+** async downloads
+*** TODO futures::stream::FuturesUnordered
+not used, test join_all
+*** DONE mpsc for saving result?
+    CLOSED: [2020-05-21 Thu 15:42]
 * pulldown-cmark
 ** md block streamer
 let md = "### Adam13531
