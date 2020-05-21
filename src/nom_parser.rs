@@ -13,11 +13,16 @@ const CHANNEL_START_ID: &str = "- [Twitch](";
 pub struct Streamer {
     name: String,
     login: String,
+    content: String,
 }
 
 impl Streamer {
     pub fn login_name(&self) -> &String {
         &self.login
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 }
 
@@ -55,7 +60,8 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         "Masood Sadri",
         "Sallar Kaboli",
         "SkillVid",
-        "Tanya Janca", //aka.ms, not using twitch any more?
+        "Tanya Janca",                       //aka.ms, not using twitch any more?
+        "Calvin Allen / Coding with Calvin", //streams on twitch, link re-directs
     ]
     .contains(&name)
     {
@@ -63,6 +69,9 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         let (input, _) = streamer_start(input)?;
         return parse_streamer(input);
     }
+
+    let (input, _) = content_start(input)?;
+    let (input, content) = stream_content(input)?;
 
     let channel_start_id = if name == "Randall Hunt" {
         "- [Twitch (Personal)]("
@@ -77,6 +86,7 @@ fn parse_streamer(input: &str) -> IResult<&str, Streamer> {
         Streamer {
             name: name.trim().to_string(),
             login: login.trim_matches('/').to_string(),
+            content: content.trim_matches('-').trim().to_string(),
         },
     ))
 }
@@ -103,17 +113,35 @@ fn streamer_login<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str
 }
 
 fn streamer_start(input: &str) -> IResult<&str, &str> {
-    let (input, _) = take_until("---")(input)?;
-    alt((tag("----\n"), tag("---\n---\n"), tag("---\n")))(input)
+    let (input, _) = take_until("--")(input)?;
+    alt((tag("----\n"), tag("---\n---\n"), tag("---\n"), tag("--\n")))(input)
 }
 
 fn channel_start<'a>(input: &'a str, channel_start_id: &str) -> IResult<&'a str, &'a str> {
     let (input, taken) = take_until(channel_start_id)(input)?;
     if taken.contains("---") {
+        eprintln!("--- found");
         Err(nom::Err::Error((taken, nom::error::ErrorKind::OneOf)))
     } else {
         Ok((input, taken))
     }
+}
+
+fn content_start(input: &str) -> IResult<&str, &str> {
+    let content_headline_start = "#### What ";
+    let (input, taken) = take_until(content_headline_start)(input)?;
+    if taken.contains("--") {
+        eprintln!("-- found during content start search");
+        return Err(nom::Err::Error((taken, nom::error::ErrorKind::OneOf)));
+    }
+
+    let (input, _) = tag(content_headline_start)(input)?;
+    let (input, _) = take_until("\n")(input)?;
+    tag("\n")(input)
+}
+
+fn stream_content(input: &str) -> IResult<&str, &str> {
+    take_until("\n")(input)
 }
 
 #[cfg(test)]
@@ -316,6 +344,7 @@ Angular 6+, SCSS, LUA, Node.js, Python, SQL, Typescript, WASM, Web Development
             Streamer {
                 name: "Mike Conley".to_string(),
                 login: "mikeconley_dot_ca".to_string(),
+                content: "Firefox Development, JavaScript, C++, CSS, Rust".to_string(),
             }
         );
     }
@@ -370,5 +399,79 @@ Angular 6+, SCSS, LUA, Node.js, Python, SQL, Typescript, WASM, Web Development
         let (_, (streamers, _)) = parse_streamers(input).unwrap();
 
         assert_eq!(streamers.len(), 3);
+    }
+
+    #[test]
+    fn test_content_start() {
+        let input = "#### What Brookzerker streams:
+- Rust
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/brookzerker)
+#### Links:
+- [Twitter](https://twitter.com/brooks_patton)
+- [GitHub](https://github.com/BrooksPatton)";
+
+        let (content, _) = content_start(input).unwrap();
+
+        assert_eq!(
+            content,
+            "- Rust
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/brookzerker)
+#### Links:
+- [Twitter](https://twitter.com/brooks_patton)
+- [GitHub](https://github.com/BrooksPatton)"
+        );
+    }
+
+    #[test]
+    fn test_stream_content() {
+        let input = "Rust
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/brookzerker)
+#### Links:
+- [Twitter](https://twitter.com/brooks_patton)
+- [GitHub](https://github.com/BrooksPatton)";
+
+        let (_, content) = stream_content(input).unwrap();
+
+        assert_eq!(content, "Rust");
+    }
+
+    #[test]
+    fn test_content_start_without_minus() {
+        let input = "#### What Holden Karau streams:
+Scala, Python, Spark, PySpark, Open Source
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/holdenkarau)
+#### Languages Spoken During Stream
+- English
+";
+
+        let (content, _) = content_start(input).unwrap();
+
+        assert_eq!(
+            content,
+            "Scala, Python, Spark, PySpark, Open Source
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/holdenkarau)
+#### Languages Spoken During Stream
+- English
+"
+        );
+    }
+
+    #[test]
+    fn test_stream_content_without_minus() {
+        let input = "Scala, Python, Spark, PySpark, Open Source
+#### Streaming on:
+- [Twitch](https://www.twitch.tv/holdenkarau)
+#### Languages Spoken During Stream
+- English
+";
+
+        let (_, content) = stream_content(input).unwrap();
+
+        assert_eq!(content, "Scala, Python, Spark, PySpark, Open Source");
     }
 }
